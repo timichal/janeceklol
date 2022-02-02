@@ -1,2 +1,2 @@
-# generátor smutné kampaně
-[https://donkeydushan.github.io/piratilol/](https://donkeydushan.github.io/piratilol/)
+# další generátor smutné kampaně
+[https://timichal.github.io/janeceklol/](https://timichal.github.io/janeceklol/)
