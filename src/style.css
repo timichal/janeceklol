@@ -1,10 +1,10 @@
 * {
     box-sizing: border-box;
+    font-family: bc-novatica-cyr, sans-serif;
 }
 
 body {
     background: #f0f0f0;
-    font-family: "Bebas Neue";
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -18,45 +18,43 @@ canvas {
 }
 
 a.save {
-    font-family: "Bebas Neue";
     font-size: 30px;
     color: white;
-    padding: 10px 25px 6px 25px;
+    padding: 0.75rem 1.5rem;
     margin: 10px;
     background-color: #000000;
-    border-style: hidden;
+    border-radius: 1.5rem;
     text-decoration: none;
     cursor: pointer;
+    transition: box-shadow 0.3s ease-in-out;
 }
 
 a.save:hover {
-    color: #f9dc4d;
+    box-shadow: 0 0.2rem 0.3rem rgba(0, 0, 0, 0.2);
 }
 
 button {
-    font-family: "Bebas Neue";
-    font-size: 30px;
-    color: black;
-    padding: 10px 10px 6px 10px;
-    margin: 10px;
-    background-color: #b5c83e;
-    border-style: hidden;
+    font-size: 20px;
+    cursor: pointer;
+    background-color: transparent;
+    border-radius: 1.5rem;
+    border: 1px solid #000;
+    -webkit-box-shadow: 0 0.2rem 0.3rem transparent;
+    box-shadow: 0 0.2rem 0.3rem transparent;
+    color: #000;
+    margin: 1rem;
+    padding: 0.75rem 1.5rem;
     text-decoration: none;
-    flex-shrink: 0;
+    transition: box-shadow 0.3s ease-in-out;
 }
 
-button:hover:active {
-    background-color: #b5c83e;
-    border-color: #b5c83e;
-}
-
+button:active,
+button:focus,
 button:hover {
-    background-color: #c8dd45;
-    border-color: #c8dd45;
+    box-shadow: 0 0.2rem 0.3rem rgba(0, 0, 0, 0.2);
 }
 
 input {
-    font-family: "Bebas Neue";
     height: 52px;
     font-size: 30px;
     border-radius: 0;
@@ -71,7 +69,6 @@ input:focus {
 }
 
 input::placeholder {
-    font-family: "Bebas Neue";
     font-size: 30px;
 }
 
@@ -122,6 +119,11 @@ input::placeholder {
     left: 100px;
 }
 
+.slider-container {
+    display: flex;
+    justify-content: center;
+}
+
 .button-container {
     display: flex;
     align-items: flex-start;
@@ -140,7 +142,7 @@ input::placeholder {
     margin-bottom: 10px;
 }
 
-.bottom-text {
+.bottom-text, .bottom-text > a {
     font-family: monospace;
     font-size: 14px;
     text-align: center;

@@ -2,7 +2,7 @@ const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
 
 const generators = [
   { url: "https://source.unsplash.com/800x800?people", weight: 10 },
-  { url: "https://source.unsplash.com/800x800?person", weight: 5 },
+  { url: "https://source.unsplash.com/800x800?group", weight: 5 },
 ];
 
 const unrolledGenerators = generators.flatMap(({ url, weight }) => Array(weight).fill(url));
