@@ -1,19 +1,9 @@
 import { claims, generators } from "./data.js";
-import { splitText, pickRandom, getAverageLuminance } from "./helperFunctions.js";
-
-const LOGO_OFFSET_X = 525;
-const LOGO_OFFSET_Y = 20;
-const LUMINANCE_THRESHOLD = 0.7;
+import { pickRandom } from "./helperFunctions.js";
 
 const unrolledGenerators = generators.flatMap(({ url, weight }) => Array(weight).fill(url));
 
 const imageReader = new FileReader();
-
-const logoLight = new Image();
-logoLight.src = "public/logo-light.png";
-
-const logoDark = new Image();
-logoDark.src = "public/logo-dark.png";
 
 let currentImage = new Image();
 let currentText = "Test text";
@@ -41,6 +31,34 @@ const rerollText = () => {
 const canvas = document.getElementById("picture");
 const ctx = canvas.getContext("2d");
 const font = new FontFace("Bebas Neue", "url(public/BebasNeue-Bold.ttf)");
+const canvasRect = canvas.getBoundingClientRect();
+const offsetX = canvasRect.left;
+const offsetY = canvasRect.top;
+
+let isDragging = false;
+let startX;
+let startY;
+
+const overlayImage = new Image();
+overlayImage.src = "public/janecek.png";
+const overlayImageCoords = { x: 525, y: 20 };
+
+canvas.addEventListener("mousedown", (e) => {
+  // mouse position
+  const mx = Number(e.clientX - offsetX);
+  const my = Number(e.clientY - offsetY);
+
+  if (
+    mx > overlayImageCoords.x && mx < overlayImageCoords.x + overlayImage.width
+    && my > overlayImageCoords.y && my < overlayImageCoords.y + overlayImage.height) {
+    isDragging = true;
+  }
+
+  startX = mx;
+  startY = my;
+});
+
+canvas.addEventListener("mouseup", () => { isDragging = false; });
 
 const initFont = async () => {
   await font.load();
@@ -79,18 +97,9 @@ const repaintImage = async () => {
   ctx.drawImage(currentImage, 0, 0);
   ctx.setTransform(); // reset so that everything else is normal size
 
-  // calculate luminance to decide whether the logo will be light or dark
-  const imgd = ctx
-    .getImageData(LOGO_OFFSET_X, LOGO_OFFSET_Y, logoLight.width, logoLight.height)
-    .data;
-  const luminanceAverage = getAverageLuminance(imgd);
+  ctx.drawImage(overlayImage, overlayImageCoords.x, overlayImageCoords.y);
 
-  if (luminanceAverage > LUMINANCE_THRESHOLD) { // make logo black if the top-right corner is bright
-    ctx.drawImage(logoDark, LOGO_OFFSET_X, LOGO_OFFSET_Y);
-  } else {
-    ctx.drawImage(logoLight, LOGO_OFFSET_X, LOGO_OFFSET_Y);
-  }
-
+  /*
   const lines = splitText(currentText, 20).reverse();
   const fontSize = lines.length < 5 ? 60 : 40;
   ctx.font = `${fontSize}px 'Bebas Neue'`;
@@ -106,7 +115,32 @@ const repaintImage = async () => {
     ctx.fillStyle = "black";
     ctx.fillText(line, x + padding, y + padding - (index * lineHeight));
   });
+  */
 };
+
+
+canvas.addEventListener("mousemove", (e) => {
+  if (isDragging) {
+    // mouse position
+    const mx = Number(e.clientX - offsetX);
+    const my = Number(e.clientY - offsetY);
+
+    // calculate the distance the mouse has moved
+    // since the last mousemove
+    const dx = mx - startX;
+    const dy = my - startY;
+
+    overlayImageCoords.x += dx;
+    overlayImageCoords.y += dy;
+
+    // redraw the scene with the new rect positions
+    repaintImage();
+
+    // reset the starting mouse position for the next mousemove
+    startX = mx;
+    startY = my;
+  }
+});
 
 imageReader.addEventListener("load", (e) => {
   currentImage = new Image();
