@@ -58,10 +58,11 @@ const overlayImageCoords = {
   height: initialHeight / descale,
 };
 
-canvas.addEventListener("mousedown", (e) => {
+const onMouseDown = (e) => {
+  const isTouch = !!e.touches;
   // mouse position
-  const mx = Number(e.clientX - offsetX);
-  const my = Number(e.clientY - offsetY);
+  const mx = Number((isTouch ? e.touches[0].clientX : e.clientX) - offsetX);
+  const my = Number((isTouch ? e.touches[0].clientY : e.clientY) - offsetY);
 
   // overlay image position (with scaling)
   const ix = overlayImageCoords.x * canvasScale;
@@ -75,7 +76,10 @@ canvas.addEventListener("mousedown", (e) => {
 
   startX = mx;
   startY = my;
-});
+};
+
+canvas.addEventListener("mousedown", onMouseDown);
+canvas.addEventListener("touchstart", onMouseDown);
 
 canvas.addEventListener("mouseup", () => { isDragging = false; });
 
@@ -137,10 +141,12 @@ const repaintImage = async () => {
   */
 };
 
-canvas.addEventListener("mousemove", (e) => {
+const onMove = (e) => {
+  const isTouch = !!e.touches;
   // mouse position
-  const mx = Number(e.clientX - offsetX);
-  const my = Number(e.clientY - offsetY);
+  const mx = Number((isTouch ? e.touches[0].clientX : e.clientX) - offsetX);
+  const my = Number((isTouch ? e.touches[0].clientY : e.clientY) - offsetY);
+  //console.log(mx, my, isDragging)
 
   // overlay image position (with scaling)
   const ix = overlayImageCoords.x * canvasScale;
@@ -170,7 +176,10 @@ canvas.addEventListener("mousemove", (e) => {
     startX = mx;
     startY = my;
   }
-});
+};
+
+canvas.addEventListener("mousemove", onMove);
+canvas.addEventListener("touchmove", onMove);
 
 imageReader.addEventListener("load", (e) => {
   currentImage = new Image();
