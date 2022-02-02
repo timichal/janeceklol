@@ -7,8 +7,10 @@ const generators = [
 
 const unrolledGenerators = generators.flatMap(({ url, weight }) => Array(weight).fill(url));
 
-const imageReader = new FileReader();
+let displayText = false;
+let currentText = "";
 
+const imageReader = new FileReader();
 let currentImage = new Image();
 
 const rerollImage = async () => {
@@ -29,7 +31,6 @@ const rerollImage = async () => {
 
 const canvas = document.getElementById("picture");
 const ctx = canvas.getContext("2d");
-const font = new FontFace("Bebas Neue", "url(public/BebasNeue-Bold.ttf)");
 
 const getCanvasInfo = () => {
   const canvasRect = canvas.getBoundingClientRect();
@@ -83,11 +84,6 @@ canvas.addEventListener("touchstart", onMouseDown);
 
 canvas.addEventListener("mouseup", () => { isDragging = false; });
 
-const initFont = async () => {
-  await font.load();
-  document.fonts.add(font);
-};
-
 const setFile = (file) => {
   if (!file.type.startsWith("image/")) {
     return;
@@ -122,23 +118,18 @@ const repaintImage = async () => {
 
   ctx.drawImage(overlayImage, overlayImageCoords.x, overlayImageCoords.y, overlayImageCoords.width, overlayImageCoords.height);
 
-  /*
-  const lines = splitText(currentText, 20).reverse();
-  const fontSize = lines.length < 5 ? 60 : 40;
-  ctx.font = `${fontSize}px 'Bebas Neue'`;
-  lines.forEach((line, index) => {
-    const x = 30;
-    const y = 685;
+  if (displayText) {
+    const fontSize = 100;
+    ctx.font = `bold ${fontSize}px 'bc-novatica-cyr'`;
+    const line = currentText || "Tohle s memy";
+    const x = 50;
+    const y = 350;
     const padding = 15;
-    const lineHeight = padding + fontSize;
     ctx.fillStyle = "#f9dc4d";
-    ctx
-      .fillRect(x, y - (index * lineHeight), ctx.measureText(line).width + 2 * padding, lineHeight);
     ctx.textBaseline = "top";
-    ctx.fillStyle = "black";
-    ctx.fillText(line, x + padding, y + padding - (index * lineHeight));
-  });
-  */
+    ctx.fillStyle = "yellow";
+    ctx.fillText(line, x + padding, y + padding);
+  }
 };
 
 const onMove = (e) => {
@@ -146,7 +137,6 @@ const onMove = (e) => {
   // mouse position
   const mx = Number((isTouch ? e.touches[0].clientX : e.clientX) - offsetX);
   const my = Number((isTouch ? e.touches[0].clientY : e.clientY) - offsetY);
-  //console.log(mx, my, isDragging)
 
   // overlay image position (with scaling)
   const ix = overlayImageCoords.x * canvasScale;
@@ -206,7 +196,15 @@ buttonCustomImg.addEventListener("click", () => {
   inputCustomImg.click();
 });
 
+const toggleText = document.getElementById("toggleText");
 const inputCustom = document.getElementById("customText");
+toggleText.addEventListener("click", () => {
+  displayText = !displayText;
+  inputCustom.disabled = !inputCustom.disabled;
+  toggleText.innerText = toggleText.innerText === "Přidat text" ? "Odebrat text" : "Přidat text";
+  repaintImage();
+});
+
 const replaceWithCustomText = async (e) => {
   if (e.type === "input" || inputCustom.value) {
     currentText = inputCustom.value;
@@ -247,8 +245,6 @@ window.addEventListener("resize", () => {
   offsetY = resizedCanvasInfo.offsetY;
   canvasScale = resizedCanvasInfo.canvasScale;
 });
-
-initFont();
 
 rerollImage()
   .then(() => repaintImage());
