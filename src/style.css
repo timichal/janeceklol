@@ -119,6 +119,11 @@ input::placeholder {
     left: 100px;
 }
 
+.slider-text {
+    margin: 10px;
+    text-align: center;
+}
+
 .slider-container {
     display: flex;
     justify-content: center;

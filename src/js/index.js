@@ -30,9 +30,17 @@ const rerollImage = async () => {
 const canvas = document.getElementById("picture");
 const ctx = canvas.getContext("2d");
 const font = new FontFace("Bebas Neue", "url(public/BebasNeue-Bold.ttf)");
-const canvasRect = canvas.getBoundingClientRect();
-const offsetX = canvasRect.left;
-const offsetY = canvasRect.top;
+
+const getCanvasInfo = () => {
+  const canvasRect = canvas.getBoundingClientRect();
+  return {
+    offsetX: canvasRect.left,
+    offsetY: canvasRect.top,
+    canvasScale: canvasRect.width / 800,
+  };
+};
+
+let { offsetX, offsetY, canvasScale } = getCanvasInfo();
 
 let isDragging = false;
 let startX;
@@ -55,8 +63,13 @@ canvas.addEventListener("mousedown", (e) => {
   const mx = Number(e.clientX - offsetX);
   const my = Number(e.clientY - offsetY);
 
-  if (mx > overlayImageCoords.x && mx < overlayImageCoords.x + overlayImageCoords.width
-    && my > overlayImageCoords.y && my < overlayImageCoords.y + overlayImageCoords.height) {
+  // overlay image position (with scaling)
+  const ix = overlayImageCoords.x * canvasScale;
+  const iy = overlayImageCoords.y * canvasScale;
+  const iw = overlayImageCoords.width * canvasScale;
+  const ih = overlayImageCoords.height * canvasScale;
+
+  if (mx > ix && mx < ix + iw && my > iy && my < iy + ih) {
     isDragging = true;
   }
 
@@ -128,9 +141,15 @@ canvas.addEventListener("mousemove", (e) => {
   // mouse position
   const mx = Number(e.clientX - offsetX);
   const my = Number(e.clientY - offsetY);
+
+  // overlay image position (with scaling)
+  const ix = overlayImageCoords.x * canvasScale;
+  const iy = overlayImageCoords.y * canvasScale;
+  const iw = overlayImageCoords.width * canvasScale;
+  const ih = overlayImageCoords.height * canvasScale;
+
   // fancy cursor
-  if (mx > overlayImageCoords.x && mx < overlayImageCoords.x + overlayImageCoords.width
-    && my > overlayImageCoords.y && my < overlayImageCoords.y + overlayImageCoords.height) {
+  if (mx > ix && mx < ix + iw && my > iy && my < iy + ih) {
     canvas.style.cursor = "pointer";
   } else {
     canvas.style.cursor = "initial";
@@ -142,8 +161,8 @@ canvas.addEventListener("mousemove", (e) => {
     const dx = mx - startX;
     const dy = my - startY;
 
-    overlayImageCoords.x += dx;
-    overlayImageCoords.y += dy;
+    overlayImageCoords.x += dx / canvasScale;
+    overlayImageCoords.y += dy / canvasScale;
 
     repaintImage();
 
@@ -202,6 +221,13 @@ linkSave.addEventListener("click", (e) => {
   e.preventDefault();
   downloadLinkReal.setAttribute("href", canvas.toDataURL("image/jpeg").replace("image/jpeg", "image/octet-stream"));
   downloadLinkReal.click();
+});
+
+window.addEventListener("resize", () => {
+  const resizedCanvasInfo = getCanvasInfo();
+  offsetX = resizedCanvasInfo.offsetX;
+  offsetY = resizedCanvasInfo.offsetY;
+  canvasScale = resizedCanvasInfo.canvasScale;
 });
 
 initFont();
