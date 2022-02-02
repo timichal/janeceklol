@@ -249,7 +249,7 @@ rerollImage()
 // Log events flag
 
 // Global vars to cache event state
-var evCache = [{ clientX: 0 }];
+var evCache = [];
 var prevDiff = -1;
 
 function clearLog(event) {
