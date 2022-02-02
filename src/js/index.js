@@ -1,12 +1,15 @@
-import { claims, generators } from "./data.js";
-import { pickRandom } from "./helperFunctions.js";
+const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+const generators = [
+  { url: "https://source.unsplash.com/800x800?people", weight: 10 },
+  { url: "https://source.unsplash.com/800x800?person", weight: 5 },
+];
 
 const unrolledGenerators = generators.flatMap(({ url, weight }) => Array(weight).fill(url));
 
 const imageReader = new FileReader();
 
 let currentImage = new Image();
-let currentText = "Test text";
 
 const rerollImage = async () => {
   const imageData = await fetch(pickRandom(unrolledGenerators));
@@ -24,10 +27,6 @@ const rerollImage = async () => {
   });
 };
 
-const rerollText = () => {
-  currentText = pickRandom(claims);
-};
-
 const canvas = document.getElementById("picture");
 const ctx = canvas.getContext("2d");
 const font = new FontFace("Bebas Neue", "url(public/BebasNeue-Bold.ttf)");
@@ -43,7 +42,13 @@ const overlayImage = new Image();
 overlayImage.src = "public/janecek.png";
 const initialWidth = 493;
 const initialHeight = 897;
-const overlayImageCoords = { x: 525, y: 20, width: initialWidth / 1.5, height: initialHeight / 1.5 };
+const descale = 1.8;
+const overlayImageCoords = {
+  x: 500,
+  y: 800 - (initialHeight / descale),
+  width: initialWidth / descale,
+  height: initialHeight / descale,
+};
 
 canvas.addEventListener("mousedown", (e) => {
   // mouse position
@@ -154,22 +159,9 @@ imageReader.addEventListener("load", (e) => {
   currentImage.src = e.target.result;
 });
 
-const buttonRandom = document.getElementById("randomize");
-buttonRandom.addEventListener("click", async () => {
-  rerollText();
-  await rerollImage();
-  repaintImage();
-});
-
-const buttonRandomImg = document.getElementById("randomize-img");
+const buttonRandomImg = document.getElementById("randomize");
 buttonRandomImg.addEventListener("click", async () => {
   await rerollImage();
-  repaintImage();
-});
-
-const buttonRandomText = document.getElementById("randomize-text");
-buttonRandomText.addEventListener("click", () => {
-  rerollText();
   repaintImage();
 });
 
@@ -204,7 +196,7 @@ slider.addEventListener("input", (e) => {
 });
 
 const downloadLinkReal = document.createElement("a");
-downloadLinkReal.setAttribute("download", "PirStanKampan.jpg");
+downloadLinkReal.setAttribute("download", "TohleJsmeMy.jpg");
 const linkSave = document.getElementById("save");
 linkSave.addEventListener("click", (e) => {
   e.preventDefault();
@@ -214,6 +206,5 @@ linkSave.addEventListener("click", (e) => {
 
 initFont();
 
-rerollText();
 rerollImage()
   .then(() => repaintImage());
