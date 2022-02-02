@@ -217,12 +217,20 @@ inputCustom.addEventListener("click", replaceWithCustomText);
 inputCustom.addEventListener("input", replaceWithCustomText);
 
 const slider = document.getElementById("slider");
-const moveSlider = (value) => {
+let oldWidth = overlayImageCoords.width;
+let oldHeight = overlayImageCoords.height;
+const zoomImage = (value) => {
   overlayImageCoords.width = initialWidth * (value / 100);
   overlayImageCoords.height = initialHeight * (value / 100);
+
+  overlayImageCoords.x += (oldWidth - overlayImageCoords.width) / 2;
+  overlayImageCoords.y += (oldHeight - overlayImageCoords.height) / 2;
+
+  oldWidth = overlayImageCoords.width;
+  oldHeight = overlayImageCoords.height;
   repaintImage();
 };
-slider.addEventListener("input", (e) => moveSlider(e.target.value));
+slider.addEventListener("input", (e) => zoomImage(e.target.value));
 
 const downloadLinkReal = document.createElement("a");
 downloadLinkReal.setAttribute("download", "TohleJsmeMy.jpg");
@@ -267,12 +275,12 @@ canvas.addEventListener("pointermove", (e) => {
       // zoom in
       if (curDiff > prevDiff) {
         slider.value = Number(slider.value) + 2;
-        moveSlider(slider.value);
+        zoomImage(slider.value);
       }
       // zoom out
       if (curDiff < prevDiff) {
         slider.value = Number(slider.value) - 2;
-        moveSlider(slider.value);
+        zoomImage(slider.value);
       }
     }
 
