@@ -147,7 +147,8 @@ input::placeholder {
     margin-bottom: 10px;
 }
 
-.bottom-text, .bottom-text > a {
+.bottom-text,
+.bottom-text > a {
     font-family: monospace;
     font-size: 14px;
     text-align: center;
@@ -161,6 +162,7 @@ input::placeholder {
     }
     .picture-container {
         margin-bottom: 0;
+        touch-action: none;
     }
     .button-container {
         width: 90%;
@@ -194,5 +196,8 @@ input::placeholder {
     }
     a.save {
         font-size: 20px;
+    }
+    .slider-container {
+        width: 90%;
     }
 }
