@@ -41,16 +41,17 @@ let startY;
 
 const overlayImage = new Image();
 overlayImage.src = "public/janecek.png";
-const overlayImageCoords = { x: 525, y: 20 };
+const initialWidth = 493;
+const initialHeight = 897;
+const overlayImageCoords = { x: 525, y: 20, width: initialWidth / 1.5, height: initialHeight / 1.5 };
 
 canvas.addEventListener("mousedown", (e) => {
   // mouse position
   const mx = Number(e.clientX - offsetX);
   const my = Number(e.clientY - offsetY);
 
-  if (
-    mx > overlayImageCoords.x && mx < overlayImageCoords.x + overlayImage.width
-    && my > overlayImageCoords.y && my < overlayImageCoords.y + overlayImage.height) {
+  if (mx > overlayImageCoords.x && mx < overlayImageCoords.x + overlayImageCoords.width
+    && my > overlayImageCoords.y && my < overlayImageCoords.y + overlayImageCoords.height) {
     isDragging = true;
   }
 
@@ -97,7 +98,7 @@ const repaintImage = async () => {
   ctx.drawImage(currentImage, 0, 0);
   ctx.setTransform(); // reset so that everything else is normal size
 
-  ctx.drawImage(overlayImage, overlayImageCoords.x, overlayImageCoords.y);
+  ctx.drawImage(overlayImage, overlayImageCoords.x, overlayImageCoords.y, overlayImageCoords.width, overlayImageCoords.height);
 
   /*
   const lines = splitText(currentText, 20).reverse();
@@ -118,13 +119,19 @@ const repaintImage = async () => {
   */
 };
 
-
 canvas.addEventListener("mousemove", (e) => {
-  if (isDragging) {
-    // mouse position
-    const mx = Number(e.clientX - offsetX);
-    const my = Number(e.clientY - offsetY);
+  // mouse position
+  const mx = Number(e.clientX - offsetX);
+  const my = Number(e.clientY - offsetY);
+  // fancy cursor
+  if (mx > overlayImageCoords.x && mx < overlayImageCoords.x + overlayImageCoords.width
+    && my > overlayImageCoords.y && my < overlayImageCoords.y + overlayImageCoords.height) {
+    canvas.style.cursor = "pointer";
+  } else {
+    canvas.style.cursor = "initial";
+  }
 
+  if (isDragging) {
     // calculate the distance the mouse has moved
     // since the last mousemove
     const dx = mx - startX;
@@ -133,7 +140,6 @@ canvas.addEventListener("mousemove", (e) => {
     overlayImageCoords.x += dx;
     overlayImageCoords.y += dy;
 
-    // redraw the scene with the new rect positions
     repaintImage();
 
     // reset the starting mouse position for the next mousemove
@@ -189,6 +195,13 @@ const replaceWithCustomText = async (e) => {
 };
 inputCustom.addEventListener("click", replaceWithCustomText);
 inputCustom.addEventListener("input", replaceWithCustomText);
+
+const slider = document.getElementById("slider");
+slider.addEventListener("input", (e) => {
+  overlayImageCoords.width = initialWidth * (e.target.value / 100);
+  overlayImageCoords.height = initialHeight * (e.target.value / 100);
+  repaintImage();
+});
 
 const downloadLinkReal = document.createElement("a");
 downloadLinkReal.setAttribute("download", "PirStanKampan.jpg");
