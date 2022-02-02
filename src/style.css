@@ -72,6 +72,10 @@ input::placeholder {
     font-size: 30px;
 }
 
+input:disabled {
+    background-color: #ccc;
+}
+
 .title {
     text-align: center;
     font-size: 60px;
