@@ -1,7 +1,7 @@
 const overlayImage = new Image();
 overlayImage.src = "public/janecek.png";
 
-const renderCanvas = async ({ canvas, state }) => {
+const renderCanvas = ({ canvas, state }) => {
   const ctx = canvas.getContext("2d");
   // clear to black (for transparent images)
   ctx.fillStyle = "black";
