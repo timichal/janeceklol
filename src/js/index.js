@@ -200,7 +200,6 @@ const toggleText = document.getElementById("toggleText");
 const inputCustom = document.getElementById("customText");
 toggleText.addEventListener("click", () => {
   displayText = !displayText;
-  inputCustom.disabled = !inputCustom.disabled;
   toggleText.innerText = toggleText.innerText === "Přidat text" ? "Odebrat text" : "Přidat text";
   repaintImage();
 });
