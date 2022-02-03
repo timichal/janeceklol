@@ -1,174 +1,89 @@
-const pickRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-const generators = [
-  { url: "https://source.unsplash.com/800x800?people", weight: 10 },
-  { url: "https://source.unsplash.com/800x800?group", weight: 5 },
-];
-
-const unrolledGenerators = generators.flatMap(({ url, weight }) => Array(weight).fill(url));
-
-let displayText = false;
-let currentText = "";
-
-const imageReader = new FileReader();
-let currentImage = new Image();
-
-const rerollImage = async () => {
-  const imageData = await fetch(pickRandom(unrolledGenerators));
-
-  return new Promise((resolve) => {
-    const image = new Image();
-
-    image.addEventListener("load", () => {
-      currentImage = image;
-      resolve();
-    });
-
-    image.crossOrigin = "anonymous";
-    image.src = imageData.url;
-  });
-};
+import renderCanvas from "./canvas.js";
+import { fetchNewImage, loadCustomImage } from "./image.js";
 
 const canvas = document.getElementById("picture");
-const ctx = canvas.getContext("2d");
+const canvasRect = canvas.getBoundingClientRect();
 
-const getCanvasInfo = () => {
-  const canvasRect = canvas.getBoundingClientRect();
-  return {
-    offsetX: canvasRect.left,
-    offsetY: canvasRect.top,
-    canvasScale: canvasRect.width / 800,
-  };
-};
-
-let { offsetX, offsetY, canvasScale } = getCanvasInfo();
-
-let isDragging = false;
-let startX;
-let startY;
-
-const overlayImage = new Image();
-overlayImage.src = "public/janecek.png";
 const initialWidth = 493;
 const initialHeight = 897;
 const descale = 1.8;
-const overlayImageCoords = {
-  x: 500,
-  y: 800 - (initialHeight / descale),
-  width: initialWidth / descale,
-  height: initialHeight / descale,
+
+const state = {
+  image: new Image(),
+  canvas: {
+    offsetX: canvasRect.left,
+    offsetY: canvasRect.top,
+    scale: canvasRect.width / 800,
+  },
+  overlayCoords: {
+    x: 500,
+    y: 800 - (initialHeight / descale),
+    width: initialWidth / descale,
+    height: initialHeight / descale,
+    oldWidth: initialWidth / descale,
+    oldHeight: initialHeight / descale,
+  },
+  touch: {
+    eventCache: [],
+    prevDiff: -1,
+  },
+  move: {
+    startX: null,
+    startY: null,
+  },
+  isDragging: false,
+  displayText: false,
+  text: "",
 };
 
+const zoomImage = (value) => {
+  state.overlayCoords.width = initialWidth * (value / 100);
+  state.overlayCoords.height = initialHeight * (value / 100);
+
+  state.overlayCoords.x += (state.overlayCoords.oldWidth - state.overlayCoords.width) / 2;
+  state.overlayCoords.y += (state.overlayCoords.oldHeight - state.overlayCoords.height) / 2;
+
+  state.overlayCoords.oldWidth = state.overlayCoords.width;
+  state.overlayCoords.oldHeight = state.overlayCoords.height;
+  renderCanvas({ canvas, state });
+};
+
+// overlay move listeners
 const onMouseDown = (e) => {
   const isTouch = !!e.touches;
   // mouse position
-  const mx = Number((isTouch ? e.touches[0].clientX : e.clientX) - offsetX);
-  const my = Number((isTouch ? e.touches[0].clientY : e.clientY) - offsetY);
+  const mx = Number((isTouch ? e.touches[0].clientX : e.clientX) - state.canvas.offsetX);
+  const my = Number((isTouch ? e.touches[0].clientY : e.clientY) - state.canvas.offsetY);
 
   // overlay image position (with scaling)
-  const ix = overlayImageCoords.x * canvasScale;
-  const iy = overlayImageCoords.y * canvasScale;
-  const iw = overlayImageCoords.width * canvasScale;
-  const ih = overlayImageCoords.height * canvasScale;
+  const ix = state.overlayCoords.x * state.canvas.scale;
+  const iy = state.overlayCoords.y * state.canvas.scale;
+  const iw = state.overlayCoords.width * state.canvas.scale;
+  const ih = state.overlayCoords.height * state.canvas.scale;
 
   if (mx > ix && mx < ix + iw && my > iy && my < iy + ih) {
-    isDragging = true;
+    state.isDragging = true;
   }
 
-  startX = mx;
-  startY = my;
+  state.move.startX = mx;
+  state.move.startY = my;
 };
-
 canvas.addEventListener("mousedown", onMouseDown);
 canvas.addEventListener("touchstart", onMouseDown);
 
-canvas.addEventListener("mouseup", () => { isDragging = false; });
+canvas.addEventListener("mouseup", () => { state.isDragging = false; });
 
-const setFile = (file) => {
-  if (!file.type.startsWith("image/")) {
-    return;
-  }
-
-  imageReader.readAsDataURL(file);
-};
-
-canvas.addEventListener("dragover", (e) => e.preventDefault());
-
-function renderWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
-  const lines = text.split("\n");
-
-  for (let i = 0; i < lines.length; i++) {
-    const words = lines[i].split(" ");
-    let line = "";
-
-    for (let n = 0; n < words.length; n++) {
-      const testLine = `${line + words[n]} `;
-      const metrics = ctx.measureText(testLine);
-      const testWidth = metrics.width;
-      if (testWidth > maxWidth && n > 0) {
-        ctx.fillText(line, x, y);
-        line = `${words[n]} `;
-        y += lineHeight;
-      } else {
-        line = testLine;
-      }
-    }
-
-    ctx.fillText(line, x, y);
-    y += lineHeight;
-  }
-}
-
-canvas.addEventListener("drop", (e) => {
-  e.preventDefault();
-  if (!e.dataTransfer || e.dataTransfer.files.length <= 0) {
-    return;
-  }
-
-  setFile(e.dataTransfer.files[0]);
-});
-
-const repaintImage = async () => {
-  // clear to black (for transparent images)
-  ctx.fillStyle = "black";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  // scale image to always fill the canvas
-  const scaleX = canvas.width / currentImage.width;
-  const scaleY = canvas.height / currentImage.height;
-  const scale = Math.max(scaleX, scaleY);
-  ctx.setTransform(scale, 0, 0, scale, 0, 0);
-  ctx.drawImage(currentImage, 0, 0);
-  ctx.setTransform(); // reset so that everything else is normal size
-
-  ctx.drawImage(overlayImage, overlayImageCoords.x, overlayImageCoords.y, overlayImageCoords.width, overlayImageCoords.height);
-
-  if (displayText) {
-    const fontSize = 95;
-    const lineHeight = 95;
-    const maxWidth = 700;
-    ctx.font = `bold ${fontSize}px 'bc-novatica-cyr'`;
-    const line = currentText || "Tohle s memy";
-    const x = 50;
-    const y = 350;
-    ctx.fillStyle = "#f9dc4d";
-    ctx.textBaseline = "top";
-    ctx.fillStyle = "yellow";
-    renderWrappedText(ctx, line, x, y, maxWidth, lineHeight);
-  }
-};
-
-const onMove = (e) => {
+const onMouseMove = (e) => {
   const isTouch = !!e.touches;
   // mouse position
-  const mx = Number((isTouch ? e.touches[0].clientX : e.clientX) - offsetX);
-  const my = Number((isTouch ? e.touches[0].clientY : e.clientY) - offsetY);
+  const mx = Number((isTouch ? e.touches[0].clientX : e.clientX) - state.canvas.offsetX);
+  const my = Number((isTouch ? e.touches[0].clientY : e.clientY) - state.canvas.offsetY);
 
   // overlay image position (with scaling)
-  const ix = overlayImageCoords.x * canvasScale;
-  const iy = overlayImageCoords.y * canvasScale;
-  const iw = overlayImageCoords.width * canvasScale;
-  const ih = overlayImageCoords.height * canvasScale;
+  const ix = state.overlayCoords.x * state.canvas.scale;
+  const iy = state.overlayCoords.y * state.canvas.scale;
+  const iw = state.overlayCoords.width * state.canvas.scale;
+  const ih = state.overlayCoords.height * state.canvas.scale;
 
   // fancy cursor
   if (mx > ix && mx < ix + iw && my > iy && my < iy + ih) {
@@ -177,45 +92,49 @@ const onMove = (e) => {
     canvas.style.cursor = "initial";
   }
 
-  if (isDragging) {
+  if (state.isDragging) {
     // calculate the distance the mouse has moved
     // since the last mousemove
-    const dx = mx - startX;
-    const dy = my - startY;
+    const dx = mx - state.move.startX;
+    const dy = my - state.move.startY;
 
-    overlayImageCoords.x += dx / canvasScale;
-    overlayImageCoords.y += dy / canvasScale;
+    state.overlayCoords.x += dx / state.canvas.scale;
+    state.overlayCoords.y += dy / state.canvas.scale;
 
-    repaintImage();
+    renderCanvas({ canvas, state });
 
     // reset the starting mouse position for the next mousemove
-    startX = mx;
-    startY = my;
+    state.move.startX = mx;
+    state.move.startY = my;
   }
 };
+canvas.addEventListener("mousemove", onMouseMove);
+canvas.addEventListener("touchmove", onMouseMove);
 
-canvas.addEventListener("mousemove", onMove);
-canvas.addEventListener("touchmove", onMove);
-
-imageReader.addEventListener("load", (e) => {
-  currentImage = new Image();
-  currentImage.addEventListener("load", () => repaintImage());
-  currentImage.src = e.target.result;
+// background image drop listeners
+canvas.addEventListener("dragover", (e) => e.preventDefault());
+canvas.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  if (!e.dataTransfer || e.dataTransfer.files.length <= 0) {
+    return;
+  }
+  state.image = await loadCustomImage({ image: e.dataTransfer.files[0] });
+  renderCanvas({ canvas, state });
 });
 
+// buttons
 const buttonRandomImg = document.getElementById("randomize");
 buttonRandomImg.addEventListener("click", async () => {
-  await rerollImage();
-  repaintImage();
+  state.image = await fetchNewImage();
+  renderCanvas({ canvas, state });
 });
 
 const inputCustomImg = document.getElementById("customImage");
-inputCustomImg.addEventListener("change", (e) => {
+inputCustomImg.addEventListener("change", async (e) => {
   e.preventDefault();
-  if (e.target.files.length <= 0) {
-    return;
-  }
-  setFile(e.target.files[0]);
+  if (e.target.files.length <= 0) return;
+  state.image = await loadCustomImage({ image: e.target.files[0] });
+  renderCanvas({ canvas, state });
 });
 const buttonCustomImg = document.getElementById("customImageBtn");
 buttonCustomImg.addEventListener("click", () => {
@@ -225,36 +144,28 @@ buttonCustomImg.addEventListener("click", () => {
 const toggleText = document.getElementById("toggleText");
 const inputCustom = document.getElementById("customText");
 toggleText.addEventListener("click", () => {
-  displayText = !displayText;
+  state.displayText = !state.displayText;
   toggleText.innerText = toggleText.innerText === "Přidat text" ? "Odebrat text" : "Přidat text";
-  repaintImage();
+  renderCanvas({ canvas, state });
 });
 
 const replaceWithCustomText = async (e) => {
   if (e.type === "input" || inputCustom.value) {
-    currentText = inputCustom.value;
-    repaintImage();
+    state.text = inputCustom.value;
+    renderCanvas({ canvas, state });
   }
 };
 inputCustom.addEventListener("click", replaceWithCustomText);
 inputCustom.addEventListener("input", replaceWithCustomText);
 
+// slider
 const slider = document.getElementById("slider");
-let oldWidth = overlayImageCoords.width;
-let oldHeight = overlayImageCoords.height;
-const zoomImage = (value) => {
-  overlayImageCoords.width = initialWidth * (value / 100);
-  overlayImageCoords.height = initialHeight * (value / 100);
+slider.addEventListener("input", (e) => {
+  zoomImage(e.target.value);
+  renderCanvas({ canvas, state });
+});
 
-  overlayImageCoords.x += (oldWidth - overlayImageCoords.width) / 2;
-  overlayImageCoords.y += (oldHeight - overlayImageCoords.height) / 2;
-
-  oldWidth = overlayImageCoords.width;
-  oldHeight = overlayImageCoords.height;
-  repaintImage();
-};
-slider.addEventListener("input", (e) => zoomImage(e.target.value));
-
+// download link
 const downloadLinkReal = document.createElement("a");
 downloadLinkReal.setAttribute("download", "TohleJsmeMy.jpg");
 const linkSave = document.getElementById("save");
@@ -264,63 +175,67 @@ linkSave.addEventListener("click", (e) => {
   downloadLinkReal.click();
 });
 
-window.addEventListener("resize", () => {
-  const resizedCanvasInfo = getCanvasInfo();
-  offsetX = resizedCanvasInfo.offsetX;
-  offsetY = resizedCanvasInfo.offsetY;
-  canvasScale = resizedCanvasInfo.canvasScale;
-});
-
-rerollImage()
-  .then(() => repaintImage());
-
-// /////////////////////
-const evCache = [];
-let prevDiff = -1;
-
-canvas.addEventListener("pointerdown", (e) => evCache.push(e));
+// overlay touch gestures
+canvas.addEventListener("pointerdown", (e) => state.touch.eventCache.push(e));
 canvas.addEventListener("pointermove", (e) => {
-  for (let i = 0; i < evCache.length; i++) {
-    if (e.pointerId === evCache[i].pointerId) {
-      evCache[i] = e;
+  for (let i = 0; i < state.touch.eventCache.length; i++) {
+    if (e.pointerId === state.touch.eventCache[i].pointerId) {
+      state.touch.eventCache[i] = e;
       break;
     }
   }
 
   // If two pointers are down, check for pinch gestures
-  if (evCache.length === 2) {
+  if (state.touch.eventCache.length === 2) {
     // Calculate the distance between the two pointers
-    const curDiff = Math.abs(evCache[0].clientX - evCache[1].clientX);
+    const curDiff = Math.abs(state.touch.eventCache[0].clientX - state.touch.eventCache[1].clientX);
 
-    if (prevDiff > 0) {
+    if (state.touch.prevDiff > 0) {
       // zoom in
-      if (curDiff > prevDiff) {
+      if (curDiff > state.touch.prevDiff) {
         slider.value = Number(slider.value) + 2;
         zoomImage(slider.value);
       }
       // zoom out
-      if (curDiff < prevDiff) {
+      if (curDiff < state.touch.prevDiff) {
         slider.value = Number(slider.value) - 2;
         zoomImage(slider.value);
       }
     }
 
-    prevDiff = curDiff;
+    state.touch.prevDiff = curDiff;
   }
 });
 
 const onPointerUp = (e) => {
-  for (let i = 0; i < evCache.length; i++) {
-    if (evCache[i].pointerId === e.pointerId) {
-      evCache.splice(i, 1);
+  for (let i = 0; i < state.touch.eventCache.length; i++) {
+    if (state.touch.eventCache[i].pointerId === e.pointerId) {
+      state.touch.eventCache.splice(i, 1);
       break;
     }
   }
   // If the number of pointers down is less than two then reset diff tracker
-  if (evCache.length < 2) prevDiff = -1;
+  if (state.touch.eventCache.length < 2) state.touch.prevDiff = -1;
 };
-
 canvas.addEventListener("pointerup", onPointerUp);
 canvas.addEventListener("pointercancel", onPointerUp);
 canvas.addEventListener("pointerout", onPointerUp);
 canvas.addEventListener("pointerleave", onPointerUp);
+
+// window resize tweak
+window.addEventListener("resize", () => {
+  const resizedCanvasRect = canvas.getBoundingClientRect();
+  state.canvas = {
+    offsetX: resizedCanvasRect.left,
+    offsetY: resizedCanvasRect.top,
+    scale: resizedCanvasRect.width / 800,
+  };
+});
+
+// first render
+const init = async () => {
+  state.image = await fetchNewImage();
+  renderCanvas({ canvas, state });
+};
+
+init();
