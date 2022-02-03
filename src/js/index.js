@@ -48,7 +48,7 @@ let startX;
 let startY;
 
 const overlayImage = new Image();
-overlayImage.src = "public/janecek.png";
+overlayImage.src = "public/janecek.png?1";
 const initialWidth = 493;
 const initialHeight = 897;
 const descale = 1.8;
