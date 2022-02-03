@@ -94,6 +94,31 @@ const setFile = (file) => {
 
 canvas.addEventListener("dragover", (e) => e.preventDefault());
 
+function renderWrappedText(ctx, text, x, y, maxWidth, lineHeight) {
+  const lines = text.split("\n");
+
+  for (let i = 0; i < lines.length; i++) {
+    const words = lines[i].split(" ");
+    let line = "";
+
+    for (let n = 0; n < words.length; n++) {
+      const testLine = `${line + words[n]} `;
+      const metrics = ctx.measureText(testLine);
+      const testWidth = metrics.width;
+      if (testWidth > maxWidth && n > 0) {
+        ctx.fillText(line, x, y);
+        line = `${words[n]} `;
+        y += lineHeight;
+      } else {
+        line = testLine;
+      }
+    }
+
+    ctx.fillText(line, x, y);
+    y += lineHeight;
+  }
+}
+
 canvas.addEventListener("drop", (e) => {
   e.preventDefault();
   if (!e.dataTransfer || e.dataTransfer.files.length <= 0) {
@@ -119,16 +144,17 @@ const repaintImage = async () => {
   ctx.drawImage(overlayImage, overlayImageCoords.x, overlayImageCoords.y, overlayImageCoords.width, overlayImageCoords.height);
 
   if (displayText) {
-    const fontSize = 100;
+    const fontSize = 95;
+    const lineHeight = 95;
+    const maxWidth = 700;
     ctx.font = `bold ${fontSize}px 'bc-novatica-cyr'`;
     const line = currentText || "Tohle s memy";
     const x = 50;
     const y = 350;
-    const padding = 15;
     ctx.fillStyle = "#f9dc4d";
     ctx.textBaseline = "top";
     ctx.fillStyle = "yellow";
-    ctx.fillText(line, x + padding, y + padding);
+    renderWrappedText(ctx, line, x, y, maxWidth, lineHeight);
   }
 };
 
